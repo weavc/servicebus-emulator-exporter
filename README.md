@@ -9,7 +9,7 @@ Since its likely a one time use, local tool that was built quickly it only suppo
 
 Install via `go get`
 ```bash
-go get github.com/weavc/servicebus-emulator-exporter
+go install github.com/weavc/servicebus-emulator-exporter@latest
 ```
 
 ```bash
