@@ -1,55 +1,85 @@
 package main
 
 type Config struct {
-	UserConfig struct {
-		Namespaces []struct {
-			Name   string `json:"Name"`
-			Queues []struct {
-				Name       string `json:"Name"`
-				Properties struct {
-					DeadLetteringOnMessageExpiration    bool   `json:"DeadLetteringOnMessageExpiration"`
-					DefaultMessageTimeToLive            string `json:"DefaultMessageTimeToLive"`
-					DuplicateDetectionHistoryTimeWindow string `json:"DuplicateDetectionHistoryTimeWindow"`
-					ForwardDeadLetteredMessagesTo       string `json:"ForwardDeadLetteredMessagesTo"`
-					ForwardTo                           string `json:"ForwardTo"`
-					LockDuration                        string `json:"LockDuration"`
-					MaxDeliveryCount                    int    `json:"MaxDeliveryCount"`
-					RequiresDuplicateDetection          bool   `json:"RequiresDuplicateDetection"`
-					RequiresSession                     bool   `json:"RequiresSession"`
-				} `json:"Properties"`
-			} `json:"Queues"`
-			Topics []struct {
-				Name       string `json:"Name"`
-				Properties struct {
-					DefaultMessageTimeToLive            string `json:"DefaultMessageTimeToLive"`
-					DuplicateDetectionHistoryTimeWindow string `json:"DuplicateDetectionHistoryTimeWindow"`
-					RequiresDuplicateDetection          bool   `json:"RequiresDuplicateDetection"`
-				} `json:"Properties"`
-				Subscriptions []struct {
-					Name       string `json:"Name"`
-					Properties struct {
-						DeadLetteringOnMessageExpiration bool   `json:"DeadLetteringOnMessageExpiration"`
-						DefaultMessageTimeToLive         string `json:"DefaultMessageTimeToLive"`
-						LockDuration                     string `json:"LockDuration"`
-						MaxDeliveryCount                 int    `json:"MaxDeliveryCount"`
-						ForwardDeadLetteredMessagesTo    string `json:"ForwardDeadLetteredMessagesTo"`
-						ForwardTo                        string `json:"ForwardTo"`
-						RequiresSession                  bool   `json:"RequiresSession"`
-					} `json:"Properties"`
-					Rules []struct {
-						Name       string `json:"Name"`
-						Properties struct {
-							FilterType        string `json:"FilterType"`
-							CorrelationFilter struct {
-								ContentType string `json:"ContentType"`
-							} `json:"CorrelationFilter"`
-						} `json:"Properties"`
-					} `json:"Rules,omitempty"`
-				} `json:"Subscriptions"`
-			} `json:"Topics"`
-		} `json:"Namespaces"`
-		Logging struct {
-			Type string `json:"Type"`
-		} `json:"Logging"`
-	} `json:"UserConfig"`
+	UserConfig UserConfig `json:"UserConfig"`
+}
+
+type UserConfig struct {
+	Namespaces []Namespace `json:"Namespaces"`
+}
+
+type Namespace struct {
+	Name   string  `json:"Name"`
+	Queues []Queue `json:"Queues"`
+	Topics []Topic `json:"Topics"`
+}
+
+type Topic struct {
+	Name          string          `json:"Name"`
+	Properties    TopicProperties `json:"Properties"`
+	Subscriptions []Subscription  `json:"Subscriptions"`
+}
+
+type TopicProperties struct {
+	DefaultMessageTimeToLive            *string `json:"DefaultMessageTimeToLive"`
+	DuplicateDetectionHistoryTimeWindow *string `json:"DuplicateDetectionHistoryTimeWindow"`
+	RequiresDuplicateDetection          *bool   `json:"RequiresDuplicateDetection"`
+}
+
+type Queue struct {
+	Name       string          `json:"Name"`
+	Properties QueueProperties `json:"Properties"`
+}
+
+type QueueProperties struct {
+	DeadLetteringOnMessageExpiration    *bool   `json:"DeadLetteringOnMessageExpiration,omitempty"`
+	DefaultMessageTimeToLive            *string `json:"DefaultMessageTimeToLive,omitempty"`
+	DuplicateDetectionHistoryTimeWindow *string `json:"DuplicateDetectionHistoryTimeWindow,omitempty"`
+	ForwardDeadLetteredMessagesTo       *string `json:"ForwardDeadLetteredMessagesTo,omitempty"`
+	ForwardTo                           *string `json:"ForwardTo,omitempty"`
+	LockDuration                        *string `json:"LockDuration,omitempty"`
+	MaxDeliveryCount                    *int32  `json:"MaxDeliveryCount,omitempty"`
+	RequiresDuplicateDetection          *bool   `json:"RequiresDuplicateDetection,omitempty"`
+	RequiresSession                     *bool   `json:"RequiresSession,omitempty"`
+}
+
+type Subscription struct {
+	Name       string                 `json:"Name"`
+	Properties SubscriptionProperties `json:"Properties"`
+	Rules      []SubscriptionRule     `json:"Rules,omitempty"`
+}
+
+type SubscriptionProperties struct {
+	DeadLetteringOnMessageExpiration *bool   `json:"DeadLetteringOnMessageExpiration,omitempty"`
+	DefaultMessageTimeToLive         *string `json:"DefaultMessageTimeToLive,omitempty"`
+	LockDuration                     *string `json:"LockDuration,omitempty"`
+	MaxDeliveryCount                 *int32  `json:"MaxDeliveryCount,omitempty"`
+	ForwardDeadLetteredMessagesTo    *string `json:"ForwardDeadLetteredMessagesTo,omitempty"`
+	ForwardTo                        *string `json:"ForwardTo,omitempty"`
+	RequiresSession                  *bool   `json:"RequiresSession,omitempty"`
+}
+
+type SubscriptionRule struct {
+	Name       string                     `json:"Name"`
+	Properties SubscriptionRuleProperties `json:"Properties"`
+}
+
+type SubscriptionRuleProperties struct {
+	FilterType        string                             `json:"FilterType"`
+	CorrelationFilter *SubscriptionRuleCorrelationFilter `json:"CorrelationFilter,omitempty"`
+	SqlFilter         *SubscriptionRuleSqlFilter         `json:"SqlFilter,omitempty"`
+}
+
+type SubscriptionRuleCorrelationFilter struct {
+	ContentType      *string `json:"ContentType,omitempty"`
+	CorrelationId    *string `json:"CorrelationId,omitempty"`
+	Label            *string `json:"Label"`
+	ReplyTo          *string `json:"ReplyTo"`
+	ReplyToSessionId *string `json:"ReplyToSessionId,omitempty"`
+	SessionId        *string `json:"SessionId,omitempty"`
+	To               *string `json:"To,omitempty"`
+}
+
+type SubscriptionRuleSqlFilter struct {
+	SqlExpression string `json:"SqlExpression"`
 }
