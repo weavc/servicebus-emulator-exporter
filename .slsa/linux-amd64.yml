@@ -1,0 +1,6 @@
+version: 1
+  
+goos: linux
+goarch: amd64
+main: ./main.go
+binary: servicebus-emulator-exporter
