@@ -1,4 +1,4 @@
-module github.com/weavc/azure-servicebus-emulator-exporter
+module github.com/weavc/servicebus-emulator-exporter
 
 go 1.23.1
 

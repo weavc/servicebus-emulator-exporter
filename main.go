@@ -21,10 +21,10 @@ func errHandler(err error) {
 func main() {
 
 	root := &cobra.Command{
-		Use:   "sb-exporter --namespace='<Connection String>'",
+		Use:   "servicebus-emulator-exporter --cs=\"<Connection String>\"",
 		Short: "Run serivce bus exporter tool for provided namespaces",
 		Run: func(cmd *cobra.Command, args []string) {
-			namespaces, err := cmd.Flags().GetStringArray("connectionstring")
+			namespaces, err := cmd.Flags().GetStringArray("cs")
 			errHandler(err)
 			config := generateConfig(cmd.Context(), namespaces)
 
@@ -35,7 +35,7 @@ func main() {
 		},
 	}
 
-	root.Flags().StringArray("connectionstring", []string{}, "Run exporter for this connection string. Multiple can be provided.")
+	root.Flags().StringArray("cs", []string{}, "Run exporter for this connection string. Multiple can be provided.")
 
 	root.Execute()
 }
