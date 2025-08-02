@@ -25,4 +25,8 @@ chmod u+x servicebus-emulator-exporter
 
 Multiple connection strings can be passed to the application to support multiple namespaces.
 
+## Limitations
+See here for emulator limitations: https://learn.microsoft.com/en-us/azure/service-bus-messaging/overview-emulator#known-limitations
+
+I have added some protection against known limitation in regards to messaging entity properties (Max TTL, duplicate duration etc), however I do not cap things like namespace/queue/topic limits. These should be filtered out by the user after generating the config file.
 

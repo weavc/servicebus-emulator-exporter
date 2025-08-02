@@ -5,20 +5,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azservicebus/admin"
 	"github.com/spf13/cobra"
 
-	"github.com/weavc/servicebus-emulator-exporter/config"
+	"github.com/weavc/servicebus-emulator-exporter/internal"
 )
 
-func errHandler(err error) {
-	if err != nil {
-		v := "[Error] "
-		fmt.Printf("%s Encountered unexpected error: %s", v, err.Error())
-		os.Exit(-1)
-	}
-}
+const (
+	MaxTimeToLive         time.Duration = time.Hour
+	MaxDuplicateDetection time.Duration = time.Minute * 5
+)
 
 func main() {
 
@@ -42,9 +40,9 @@ func main() {
 	root.Execute()
 }
 
-func generateConfig(ctx context.Context, namespace []string) config.Config {
+func generateConfig(ctx context.Context, namespace []string) internal.Config {
 
-	namespaces := []config.Namespace{}
+	namespaces := []internal.Namespace{}
 
 	for _, ns := range namespace {
 
@@ -54,7 +52,7 @@ func generateConfig(ctx context.Context, namespace []string) config.Config {
 		nsProperties, err := client.GetNamespaceProperties(ctx, nil)
 		errHandler(err)
 
-		ns := config.Namespace{
+		ns := internal.Namespace{
 			Name:   nsProperties.Name,
 			Queues: getQueues(ctx, client),
 			Topics: getTopics(ctx, client),
@@ -62,12 +60,12 @@ func generateConfig(ctx context.Context, namespace []string) config.Config {
 		namespaces = append(namespaces, ns)
 	}
 
-	return config.Config{UserConfig: config.UserConfig{Namespaces: namespaces}}
+	return internal.Config{UserConfig: internal.UserConfig{Namespaces: namespaces, Logging: internal.Logging{Type:"console"}}}
 }
 
-func getSubscriptions(ctx context.Context, client *admin.Client, topicName string) []config.Subscription {
+func getSubscriptions(ctx context.Context, client *admin.Client, topicName string) []internal.Subscription {
 
-	var subs []config.Subscription = []config.Subscription{}
+	var subs []internal.Subscription = []internal.Subscription{}
 
 	pager := client.NewListSubscriptionsPager(topicName, nil)
 	for pager.More() {
@@ -76,11 +74,11 @@ func getSubscriptions(ctx context.Context, client *admin.Client, topicName strin
 
 		for _, q := range page.Subscriptions {
 
-			mapped := config.Subscription{
+			mapped := internal.Subscription{
 				Name: q.SubscriptionName,
-				Properties: config.SubscriptionProperties{
+				Properties: internal.SubscriptionProperties{
+					DefaultMessageTimeToLive:         capDuration(q.DefaultMessageTimeToLive, MaxTimeToLive),
 					DeadLetteringOnMessageExpiration: q.DeadLetteringOnMessageExpiration,
-					DefaultMessageTimeToLive:         q.DefaultMessageTimeToLive,
 					ForwardDeadLetteredMessagesTo:    q.ForwardDeadLetteredMessagesTo,
 					ForwardTo:                        q.ForwardTo,
 					MaxDeliveryCount:                 q.MaxDeliveryCount,
@@ -97,9 +95,9 @@ func getSubscriptions(ctx context.Context, client *admin.Client, topicName strin
 	return subs
 }
 
-func getSubscriptionRules(ctx context.Context, client *admin.Client, topicName string, subscriptionName string) []config.SubscriptionRule {
+func getSubscriptionRules(ctx context.Context, client *admin.Client, topicName string, subscriptionName string) []internal.SubscriptionRule {
 
-	var subRules []config.SubscriptionRule = []config.SubscriptionRule{}
+	var subRules []internal.SubscriptionRule = []internal.SubscriptionRule{}
 
 	pager := client.NewListRulesPager(topicName, subscriptionName, nil)
 	for pager.More() {
@@ -108,15 +106,15 @@ func getSubscriptionRules(ctx context.Context, client *admin.Client, topicName s
 
 		for _, q := range page.Rules {
 
-			mapped := config.SubscriptionRule{
+			mapped := internal.SubscriptionRule{
 				Name: q.Name,
 			}
 
 			sf, ok := q.Filter.(*admin.SQLFilter)
 			if ok {
-				mapped.Properties = config.SubscriptionRuleProperties{
+				mapped.Properties = internal.SubscriptionRuleProperties{
 					FilterType: "Sql",
-					SqlFilter: &config.SubscriptionRuleSqlFilter{
+					SqlFilter: &internal.SubscriptionRuleSqlFilter{
 						SqlExpression: sf.Expression,
 					},
 				}
@@ -124,9 +122,9 @@ func getSubscriptionRules(ctx context.Context, client *admin.Client, topicName s
 
 			cf, ok := q.Filter.(*admin.CorrelationFilter)
 			if ok {
-				mapped.Properties = config.SubscriptionRuleProperties{
+				mapped.Properties = internal.SubscriptionRuleProperties{
 					FilterType: "Correlation",
-					CorrelationFilter: &config.SubscriptionRuleCorrelationFilter{
+					CorrelationFilter: &internal.SubscriptionRuleCorrelationFilter{
 						ContentType:      cf.ContentType,
 						CorrelationId:    cf.CorrelationID,
 						Label:            cf.Subject,
@@ -146,8 +144,8 @@ func getSubscriptionRules(ctx context.Context, client *admin.Client, topicName s
 
 }
 
-func getTopics(ctx context.Context, client *admin.Client) []config.Topic {
-	var topics []config.Topic = []config.Topic{}
+func getTopics(ctx context.Context, client *admin.Client) []internal.Topic {
+	var topics []internal.Topic = []internal.Topic{}
 
 	pager := client.NewListTopicsPager(nil)
 	for pager.More() {
@@ -156,11 +154,11 @@ func getTopics(ctx context.Context, client *admin.Client) []config.Topic {
 
 		for _, q := range page.Topics {
 
-			mapped := config.Topic{
+			mapped := internal.Topic{
 				Name: q.TopicName,
-				Properties: config.TopicProperties{
-					DefaultMessageTimeToLive:            q.DefaultMessageTimeToLive,
-					DuplicateDetectionHistoryTimeWindow: q.DuplicateDetectionHistoryTimeWindow,
+				Properties: internal.TopicProperties{
+					DuplicateDetectionHistoryTimeWindow: capDuration(q.DuplicateDetectionHistoryTimeWindow, MaxDuplicateDetection),
+					DefaultMessageTimeToLive:            capDuration(q.DefaultMessageTimeToLive, MaxTimeToLive),
 					RequiresDuplicateDetection:          q.RequiresDuplicateDetection,
 				},
 				Subscriptions: getSubscriptions(ctx, client, q.TopicName),
@@ -173,9 +171,9 @@ func getTopics(ctx context.Context, client *admin.Client) []config.Topic {
 	return topics
 }
 
-func getQueues(ctx context.Context, client *admin.Client) []config.Queue {
+func getQueues(ctx context.Context, client *admin.Client) []internal.Queue {
 
-	var queues []config.Queue = []config.Queue{}
+	var queues []internal.Queue = []internal.Queue{}
 
 	pager := client.NewListQueuesPager(nil)
 	for pager.More() {
@@ -183,12 +181,12 @@ func getQueues(ctx context.Context, client *admin.Client) []config.Queue {
 		errHandler(err)
 
 		for _, q := range page.Queues {
-			mapped := config.Queue{
+			mapped := internal.Queue{
 				Name: q.QueueName,
-				Properties: config.QueueProperties{
+				Properties: internal.QueueProperties{
 					DeadLetteringOnMessageExpiration:    q.DeadLetteringOnMessageExpiration,
-					DefaultMessageTimeToLive:            q.DefaultMessageTimeToLive,
-					DuplicateDetectionHistoryTimeWindow: q.DuplicateDetectionHistoryTimeWindow,
+					DuplicateDetectionHistoryTimeWindow: capDuration(q.DuplicateDetectionHistoryTimeWindow, MaxDuplicateDetection),
+					DefaultMessageTimeToLive:            capDuration(q.DefaultMessageTimeToLive, MaxTimeToLive),
 					ForwardDeadLetteredMessagesTo:       q.ForwardDeadLetteredMessagesTo,
 					ForwardTo:                           q.ForwardTo,
 					LockDuration:                        q.LockDuration,
@@ -203,4 +201,23 @@ func getQueues(ctx context.Context, client *admin.Client) []config.Queue {
 	}
 
 	return queues
+}
+
+func errHandler(err error) {
+	if err != nil {
+		v := "[Error] "
+		fmt.Printf("%s Encountered unexpected error: %s", v, err.Error())
+		os.Exit(-1)
+	}
+}
+
+func capDuration(duration *string, maxDuration time.Duration) *string {
+	d, err := internal.ISO8601StringToDuration(duration)
+	errHandler(err)
+
+	if *d > maxDuration {
+		return internal.DurationToStringPtr(&maxDuration)
+	}
+
+	return duration
 }

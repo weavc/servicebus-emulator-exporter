@@ -1,4 +1,4 @@
-package config
+package internal
 
 type Config struct {
 	UserConfig UserConfig `json:"UserConfig"`
@@ -6,6 +6,11 @@ type Config struct {
 
 type UserConfig struct {
 	Namespaces []Namespace `json:"Namespaces"`
+	Logging Logging `json:"Logging"`
+}
+
+type Logging struct {
+	Type string `json:"Type"`
 }
 
 type Namespace struct {
