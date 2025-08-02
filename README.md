@@ -18,7 +18,7 @@ servicebus-emulator-exporter --cs="Endpoint=sb://<namespace>;SharedAccessKeyName
 
 Download binaries from releases:
 ```
-wget https://github.com/weavc/servicebus-emulator-exporter/releases/download/0.0.2a/servicebus-emulator-exporter
+wget https://github.com/weavc/servicebus-emulator-exporter/releases/latest/download/servicebus-emulator-exporter
 chmod u+x servicebus-emulator-exporter
 ./servicebus-emulator-exporter --cs="Endpoint=sb://<namespace>;SharedAccessKeyName=<key name>;SharedAccessKey=<key>" > Config.json
 ```
