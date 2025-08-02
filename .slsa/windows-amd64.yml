@@ -3,4 +3,4 @@ version: 1
 goos: windows
 goarch: amd64
 main: ./main.go
-binary: servicebus-emulator-exporter
+binary: servicebus-emulator-exporter.exe
