@@ -8,6 +8,8 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azservicebus/admin"
 	"github.com/spf13/cobra"
+
+	"github.com/weavc/servicebus-emulator-exporter/config"
 )
 
 func errHandler(err error) {
@@ -40,9 +42,9 @@ func main() {
 	root.Execute()
 }
 
-func generateConfig(ctx context.Context, namespace []string) Config {
+func generateConfig(ctx context.Context, namespace []string) config.Config {
 
-	namespaces := []Namespace{}
+	namespaces := []config.Namespace{}
 
 	for _, ns := range namespace {
 
@@ -52,7 +54,7 @@ func generateConfig(ctx context.Context, namespace []string) Config {
 		nsProperties, err := client.GetNamespaceProperties(ctx, nil)
 		errHandler(err)
 
-		ns := Namespace{
+		ns := config.Namespace{
 			Name:   nsProperties.Name,
 			Queues: getQueues(ctx, client),
 			Topics: getTopics(ctx, client),
@@ -60,12 +62,12 @@ func generateConfig(ctx context.Context, namespace []string) Config {
 		namespaces = append(namespaces, ns)
 	}
 
-	return Config{UserConfig{Namespaces: namespaces}}
+	return config.Config{UserConfig: config.UserConfig{Namespaces: namespaces}}
 }
 
-func getSubscriptions(ctx context.Context, client *admin.Client, topicName string) []Subscription {
+func getSubscriptions(ctx context.Context, client *admin.Client, topicName string) []config.Subscription {
 
-	var subs []Subscription = []Subscription{}
+	var subs []config.Subscription = []config.Subscription{}
 
 	pager := client.NewListSubscriptionsPager(topicName, nil)
 	for pager.More() {
@@ -74,9 +76,9 @@ func getSubscriptions(ctx context.Context, client *admin.Client, topicName strin
 
 		for _, q := range page.Subscriptions {
 
-			mapped := Subscription{
+			mapped := config.Subscription{
 				Name: q.SubscriptionName,
-				Properties: SubscriptionProperties{
+				Properties: config.SubscriptionProperties{
 					DeadLetteringOnMessageExpiration: q.DeadLetteringOnMessageExpiration,
 					DefaultMessageTimeToLive:         q.DefaultMessageTimeToLive,
 					ForwardDeadLetteredMessagesTo:    q.ForwardDeadLetteredMessagesTo,
@@ -95,9 +97,9 @@ func getSubscriptions(ctx context.Context, client *admin.Client, topicName strin
 	return subs
 }
 
-func getSubscriptionRules(ctx context.Context, client *admin.Client, topicName string, subscriptionName string) []SubscriptionRule {
+func getSubscriptionRules(ctx context.Context, client *admin.Client, topicName string, subscriptionName string) []config.SubscriptionRule {
 
-	var subRules []SubscriptionRule = []SubscriptionRule{}
+	var subRules []config.SubscriptionRule = []config.SubscriptionRule{}
 
 	pager := client.NewListRulesPager(topicName, subscriptionName, nil)
 	for pager.More() {
@@ -106,15 +108,15 @@ func getSubscriptionRules(ctx context.Context, client *admin.Client, topicName s
 
 		for _, q := range page.Rules {
 
-			mapped := SubscriptionRule{
+			mapped := config.SubscriptionRule{
 				Name: q.Name,
 			}
 
 			sf, ok := q.Filter.(*admin.SQLFilter)
 			if ok {
-				mapped.Properties = SubscriptionRuleProperties{
+				mapped.Properties = config.SubscriptionRuleProperties{
 					FilterType: "Sql",
-					SqlFilter: &SubscriptionRuleSqlFilter{
+					SqlFilter: &config.SubscriptionRuleSqlFilter{
 						SqlExpression: sf.Expression,
 					},
 				}
@@ -122,9 +124,9 @@ func getSubscriptionRules(ctx context.Context, client *admin.Client, topicName s
 
 			cf, ok := q.Filter.(*admin.CorrelationFilter)
 			if ok {
-				mapped.Properties = SubscriptionRuleProperties{
+				mapped.Properties = config.SubscriptionRuleProperties{
 					FilterType: "Correlation",
-					CorrelationFilter: &SubscriptionRuleCorrelationFilter{
+					CorrelationFilter: &config.SubscriptionRuleCorrelationFilter{
 						ContentType:      cf.ContentType,
 						CorrelationId:    cf.CorrelationID,
 						Label:            cf.Subject,
@@ -144,8 +146,8 @@ func getSubscriptionRules(ctx context.Context, client *admin.Client, topicName s
 
 }
 
-func getTopics(ctx context.Context, client *admin.Client) []Topic {
-	var topics []Topic = []Topic{}
+func getTopics(ctx context.Context, client *admin.Client) []config.Topic {
+	var topics []config.Topic = []config.Topic{}
 
 	pager := client.NewListTopicsPager(nil)
 	for pager.More() {
@@ -154,9 +156,9 @@ func getTopics(ctx context.Context, client *admin.Client) []Topic {
 
 		for _, q := range page.Topics {
 
-			mapped := Topic{
+			mapped := config.Topic{
 				Name: q.TopicName,
-				Properties: TopicProperties{
+				Properties: config.TopicProperties{
 					DefaultMessageTimeToLive:            q.DefaultMessageTimeToLive,
 					DuplicateDetectionHistoryTimeWindow: q.DuplicateDetectionHistoryTimeWindow,
 					RequiresDuplicateDetection:          q.RequiresDuplicateDetection,
@@ -171,9 +173,9 @@ func getTopics(ctx context.Context, client *admin.Client) []Topic {
 	return topics
 }
 
-func getQueues(ctx context.Context, client *admin.Client) []Queue {
+func getQueues(ctx context.Context, client *admin.Client) []config.Queue {
 
-	var queues []Queue = []Queue{}
+	var queues []config.Queue = []config.Queue{}
 
 	pager := client.NewListQueuesPager(nil)
 	for pager.More() {
@@ -181,9 +183,9 @@ func getQueues(ctx context.Context, client *admin.Client) []Queue {
 		errHandler(err)
 
 		for _, q := range page.Queues {
-			mapped := Queue{
+			mapped := config.Queue{
 				Name: q.QueueName,
-				Properties: QueueProperties{
+				Properties: config.QueueProperties{
 					DeadLetteringOnMessageExpiration:    q.DeadLetteringOnMessageExpiration,
 					DefaultMessageTimeToLive:            q.DefaultMessageTimeToLive,
 					DuplicateDetectionHistoryTimeWindow: q.DuplicateDetectionHistoryTimeWindow,
