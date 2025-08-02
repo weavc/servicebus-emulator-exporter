@@ -12,15 +12,17 @@ Install via `go get`
 go get github.com/weavc/servicebus-emulator-exporter
 ```
 
-Or download the binaries found in the releases on the right.
-```
-// todo
-```
-
 ```bash
 servicebus-emulator-exporter --cs="Endpoint=sb://<namespace>;SharedAccessKeyName=<key name>;SharedAccessKey=<key>" > Config.json
 ```
 
-Note: Multiple connection strings can be passed to the application to support multiple namespaces.
+Or download the binaries found in the releases on the right.
+```
+wget https://github.com/weavc/servicebus-emulator-exporter/releases/download/0.0.2a/servicebus-emulator-exporter
+chmod u+x servicebus-emulator-exporter
+./servicebus-emulator-exporter --cs="Endpoint=sb://<namespace>;SharedAccessKeyName=<key name>;SharedAccessKey=<key>" > Config.json
+```
+
+Multiple connection strings can be passed to the application to support multiple namespaces.
 
 
