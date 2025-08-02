@@ -26,5 +26,5 @@ chmod u+x servicebus-emulator-exporter
 ## Limitations
 See here for emulator limitations: https://learn.microsoft.com/en-us/azure/service-bus-messaging/overview-emulator#known-limitations
 
-I have added some protection against known limitation in regards to messaging entity properties (Max TTL, duplicate duration etc), however I do not cap things like namespace/queue/topic limits. These should be filtered out by the user after generating the config file.
+Basic caps on durations have been implemented however caps on things like namespaces/queues/topics/subscriptions/rules have all been ignored due to this being a very user specific concern.
 
