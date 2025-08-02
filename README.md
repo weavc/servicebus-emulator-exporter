@@ -7,7 +7,7 @@ Since its likely a one time use, local tool that was built quickly it only suppo
 
 ## Usage
 
-Install via `go get`
+Install via `go install`:
 ```bash
 go install github.com/weavc/servicebus-emulator-exporter@latest
 ```
@@ -16,14 +16,12 @@ go install github.com/weavc/servicebus-emulator-exporter@latest
 servicebus-emulator-exporter --cs="Endpoint=sb://<namespace>;SharedAccessKeyName=<key name>;SharedAccessKey=<key>" > Config.json
 ```
 
-Or download the binaries found in the releases on the right.
+Download binaries from releases:
 ```
 wget https://github.com/weavc/servicebus-emulator-exporter/releases/download/0.0.2a/servicebus-emulator-exporter
 chmod u+x servicebus-emulator-exporter
 ./servicebus-emulator-exporter --cs="Endpoint=sb://<namespace>;SharedAccessKeyName=<key name>;SharedAccessKey=<key>" > Config.json
 ```
-
-Multiple connection strings can be passed to the application to support multiple namespaces.
 
 ## Limitations
 See here for emulator limitations: https://learn.microsoft.com/en-us/azure/service-bus-messaging/overview-emulator#known-limitations
