@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azservicebus/admin"
@@ -24,9 +26,25 @@ func main() {
 		Use:   "servicebus-emulator-exporter --cs=\"<Connection String>\"",
 		Short: "Run serivce bus exporter tool for provided namespaces",
 		Run: func(cmd *cobra.Command, args []string) {
-			namespaces, err := cmd.Flags().GetStringArray("cs")
+			connections, err := cmd.Flags().GetStringArray("cs")
+			filters, err := cmd.Flags().GetStringArray("filter")
+			namespace, err := cmd.Flags().GetString("namespace")
 			errHandler(err)
-			config := generateConfig(cmd.Context(), namespaces)
+
+
+			var regex *regexp.Regexp = nil
+			if len(filters) > 0 {
+				capturedFilters := []string{} 
+				for _, f := range filters {
+					capturedFilters = append(capturedFilters, fmt.Sprintf("(%s)", f)) 
+				}
+
+				regexstr := strings.Join(capturedFilters, "|")
+				regex = regexp.MustCompile(regexstr)
+			}
+
+
+			config := generateConfig(cmd.Context(), connections, regex, namespace)
 
 			b, err := json.MarshalIndent(config, "", "  ")
 			errHandler(err)
@@ -36,15 +54,17 @@ func main() {
 	}
 
 	root.Flags().StringArray("cs", []string{}, "Run exporter for this connection string. Multiple can be provided.")
+	root.Flags().StringArray("filter", []string{}, "Entity name filter pattern. If multiple are provided entities need to match 1 filter.")
+	root.Flags().String("namespace", "", "Namespace to group namespaces under. Since service bus emulator only allows 1 namespace.")
 
 	root.Execute()
 }
 
-func generateConfig(ctx context.Context, namespace []string) internal.Config {
+func generateConfig(ctx context.Context, connections []string, regex *regexp.Regexp, namespace string) internal.Config {
 
 	namespaces := []internal.Namespace{}
 
-	for _, ns := range namespace {
+	for _, ns := range connections {
 
 		client, err := admin.NewClientFromConnectionString(ns, nil)
 		errHandler(err)
@@ -54,10 +74,22 @@ func generateConfig(ctx context.Context, namespace []string) internal.Config {
 
 		ns := internal.Namespace{
 			Name:   nsProperties.Name,
-			Queues: getQueues(ctx, client),
-			Topics: getTopics(ctx, client),
+			Queues: getQueues(ctx, client, regex),
+			Topics: getTopics(ctx, client, regex),
 		}
 		namespaces = append(namespaces, ns)
+	}
+
+	// group under user provided namespace name
+	if namespace != "" {
+		queues := []internal.Queue{}
+		topics := []internal.Topic{}
+		for _, ns := range namespaces {
+			queues = append(queues, ns.Queues...)
+			topics = append(topics, ns.Topics...)
+		}
+		groupedNs := internal.Namespace{Name: namespace, Queues:queues, Topics: topics}
+		return internal.Config{UserConfig: internal.UserConfig{Namespaces: []internal.Namespace{groupedNs}, Logging: internal.Logging{Type:"console"}}}
 	}
 
 	return internal.Config{UserConfig: internal.UserConfig{Namespaces: namespaces, Logging: internal.Logging{Type:"console"}}}
@@ -144,7 +176,7 @@ func getSubscriptionRules(ctx context.Context, client *admin.Client, topicName s
 
 }
 
-func getTopics(ctx context.Context, client *admin.Client) []internal.Topic {
+func getTopics(ctx context.Context, client *admin.Client, regex *regexp.Regexp) []internal.Topic {
 	var topics []internal.Topic = []internal.Topic{}
 
 	pager := client.NewListTopicsPager(nil)
@@ -153,6 +185,10 @@ func getTopics(ctx context.Context, client *admin.Client) []internal.Topic {
 		errHandler(err)
 
 		for _, q := range page.Topics {
+
+			if regex != nil && regex.FindString(q.TopicName) == "" {
+				continue
+			}
 
 			mapped := internal.Topic{
 				Name: q.TopicName,
@@ -171,7 +207,7 @@ func getTopics(ctx context.Context, client *admin.Client) []internal.Topic {
 	return topics
 }
 
-func getQueues(ctx context.Context, client *admin.Client) []internal.Queue {
+func getQueues(ctx context.Context, client *admin.Client, regex *regexp.Regexp) []internal.Queue {
 
 	var queues []internal.Queue = []internal.Queue{}
 
@@ -181,6 +217,13 @@ func getQueues(ctx context.Context, client *admin.Client) []internal.Queue {
 		errHandler(err)
 
 		for _, q := range page.Queues {
+
+			if regex != nil && regex.FindString(q.QueueName) == "" {
+				continue
+			}
+				
+
+
 			mapped := internal.Queue{
 				Name: q.QueueName,
 				Properties: internal.QueueProperties{
