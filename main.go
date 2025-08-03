@@ -28,7 +28,7 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 			connections, err := cmd.Flags().GetStringArray("cs")
 			filters, err := cmd.Flags().GetStringArray("filter")
-			namespace, err := cmd.Flags().GetString("namespace")
+			group, err := cmd.Flags().GetString("group")
 			errHandler(err)
 
 
@@ -44,7 +44,7 @@ func main() {
 			}
 
 
-			config := generateConfig(cmd.Context(), connections, regex, namespace)
+			config := generateConfig(cmd.Context(), connections, regex, group)
 
 			b, err := json.MarshalIndent(config, "", "  ")
 			errHandler(err)
@@ -54,8 +54,8 @@ func main() {
 	}
 
 	root.Flags().StringArray("cs", []string{}, "Run exporter for this connection string. Multiple can be provided.")
-	root.Flags().StringArray("filter", []string{}, "Entity name filter pattern. If multiple are provided entities need to match 1 filter.")
-	root.Flags().String("namespace", "", "Namespace to group namespaces under. Since service bus emulator only allows 1 namespace.")
+	root.Flags().StringArray("filter", []string{}, "Regex entity name filter pattern. Multiple filters can be provided, entities will be added if they match 1 of the filters.")
+	root.Flags().String("group", "", "Namespace to group namespaces under. Since service bus emulator only supports 1 namespace.")
 
 	root.Execute()
 }
