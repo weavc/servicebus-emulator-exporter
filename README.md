@@ -14,7 +14,7 @@ See here for the emulators limitations: https://learn.microsoft.com/en-us/azure/
 
 **Duration Limits**: Hard limits on durations have been implemented, if you find any more caps that haven't been implemented please create an issue or PR.
 
-**Namespace Limits**: Due to there being a hard limit of 1 namespace the `--group="<namespace name>"` has been added. If provided this will merge multiple namespaces into 1.
+**Namespace Limits**: Due to there being a hard limit of 1 namespace, the `--group="<namespace name>"` parameter has been added. If provided this will merge multiple namespaces into 1.
 
 **Queue/Topic Limits**: There is a hard limit on the emulator of 50 queues/topics. The user can filter entities by name by passing `--filter="<filter>"` parameters. While not a hard cap, it should help users filter down the queues and topics to a more managable data set. 
 
