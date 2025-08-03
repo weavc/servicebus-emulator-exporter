@@ -12,7 +12,7 @@ Tooling to export existing azure service bus infrastructure into a Config.json f
 
 See here for the emulators limitations: https://learn.microsoft.com/en-us/azure/service-bus-messaging/overview-emulator#known-limitations
 
-**Duration Limits**: Hard limits on durations have been implemented, if you find any more caps that haven't been implemented please create an issue or PR.
+**Duration Limits**: Hard limits on durations have been implemented, if you find any more that haven't been implemented please create an issue or PR.
 
 **Namespace Limits**: Due to there being a hard limit of 1 namespace, the `--group="<namespace name>"` parameter has been added. If provided this will merge multiple namespaces into 1.
 
