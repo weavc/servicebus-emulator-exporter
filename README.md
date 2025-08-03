@@ -4,7 +4,7 @@
 Tooling to export existing azure service bus infrastructure into a Config.json file suitable for [Azure service bus emulator](https://learn.microsoft.com/en-us/azure/service-bus-messaging/overview-emulator).
 
 ### Features
-- Connect to multiple namespaces using `--cs="Endpoint=sb://<namespace>;SharedAccessKeyName=<key name>;SharedAccessKey=<key>"`
+- Connect to multiple namespaces using `--cs="<connection string>"`
 - Group all namespaces together using `--group="<group name>"`
 - Filter queue and topic entities using regex patterns `--filter="inventory"`
 
@@ -12,15 +12,13 @@ Tooling to export existing azure service bus infrastructure into a Config.json f
 
 See here for the emulators limitations: https://learn.microsoft.com/en-us/azure/service-bus-messaging/overview-emulator#known-limitations
 
-Duration caps: Hard limits on durations have been implemented, if you find any more caps that haven't been implemented please create an issue or PR.
+**Duration Limits**: Hard limits on durations have been implemented, if you find any more caps that haven't been implemented please create an issue or PR.
 
-Namespace cap: Due to there being a hard limit of 1 namespace the `--group="<namespace name>"` has been added. If provided this will merge multiple namespaces into 1.
+**Namespace Limits**: Due to there being a hard limit of 1 namespace the `--group="<namespace name>"` has been added. If provided this will merge multiple namespaces into 1.
 
-Queue/Topic cap: There is a hard limit on the emulator of 50 queues/topics. The user can filter entities by name by passing `--filter="<filter>"` parameters. While not a hard cap, it should help users filter down the queues and topics to a more managable data set. 
+**Queue/Topic Limits**: There is a hard limit on the emulator of 50 queues/topics. The user can filter entities by name by passing `--filter="<filter>"` parameters. While not a hard cap, it should help users filter down the queues and topics to a more managable data set. 
 
-Others: No protections are provided against other caps. Most of the others seemed reasonable enough to work with most configurations, however Im sure there will be edge cases.
-
-Due to all the caps and limitations, when initially running the service bus emulator I recommend monitoring the console logs. Once the service has connected to SQL there will be an exception throw that will tell you the issue with the config file.
+**Others**: No protections are provided against other caps. Most of the others seemed reasonable enough to work with most configurations, however Im sure there will be edge cases.
 
 ## Installation
 
