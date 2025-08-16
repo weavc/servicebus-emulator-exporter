@@ -20,6 +20,8 @@ const (
 	MaxDuplicateDetection time.Duration = time.Minute * 5
 )
 
+var forwardToUriRegex *regexp.Regexp = regexp.MustCompile("https?:\\/\\/(([a-zA-Z0-9-])*\\.)*([a-zA-Z]*\\/)")
+
 func main() {
 
 	root := &cobra.Command{
@@ -112,7 +114,7 @@ func getSubscriptions(ctx context.Context, client *admin.Client, topicName strin
 					DefaultMessageTimeToLive:         capDuration(q.DefaultMessageTimeToLive, MaxTimeToLive),
 					DeadLetteringOnMessageExpiration: q.DeadLetteringOnMessageExpiration,
 					ForwardDeadLetteredMessagesTo:    q.ForwardDeadLetteredMessagesTo,
-					ForwardTo:                        q.ForwardTo,
+					ForwardTo:                        ensureForwardToFormatting(q.ForwardTo),
 					MaxDeliveryCount:                 q.MaxDeliveryCount,
 					LockDuration:                     q.LockDuration,
 					RequiresSession:                  q.RequiresSession,
@@ -231,7 +233,7 @@ func getQueues(ctx context.Context, client *admin.Client, regex *regexp.Regexp) 
 					DuplicateDetectionHistoryTimeWindow: capDuration(q.DuplicateDetectionHistoryTimeWindow, MaxDuplicateDetection),
 					DefaultMessageTimeToLive:            capDuration(q.DefaultMessageTimeToLive, MaxTimeToLive),
 					ForwardDeadLetteredMessagesTo:       q.ForwardDeadLetteredMessagesTo,
-					ForwardTo:                           q.ForwardTo,
+					ForwardTo:                           ensureForwardToFormatting(q.ForwardTo),
 					LockDuration:                        q.LockDuration,
 					MaxDeliveryCount:                    q.MaxDeliveryCount,
 					RequiresDuplicateDetection:          q.RequiresDuplicateDetection,
@@ -244,6 +246,15 @@ func getQueues(ctx context.Context, client *admin.Client, regex *regexp.Regexp) 
 	}
 
 	return queues
+}
+
+func ensureForwardToFormatting(forwardToStr *string) *string {
+	if forwardToStr == nil {
+		return forwardToStr
+	}
+
+	newStr := forwardToUriRegex.ReplaceAllString(*forwardToStr, "")
+	return &newStr
 }
 
 func errHandler(err error) {
